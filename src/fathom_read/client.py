@@ -25,7 +25,7 @@ def read(ops: Iterable[Op], supersede: Optional[List[Tuple[str, str]]] = None,
     body = json.dumps({"ops": [o.as_dict() for o in ops], "supersede": [list(p) for p in (supersede or [])]}).encode()
     req = urllib.request.Request(endpoint, data=body, method="POST", headers={
         "Content-Type": "application/json", "Authorization": f"Bearer {key}",
-        "User-Agent": "fathom-read/0.1.0"})
+        "User-Agent": "fathom-read/0.1.1"})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return Verdict.from_dict(json.loads(r.read().decode()))
