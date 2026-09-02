@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use fathom-read in research, cite the paper below and this repository."
+title: "fathom-read: a committed-state read for long-horizon AI agents"
+authors:
+  - family-names: Galligan
+    given-names: Peter
+repository-code: "https://github.com/ERA-Fathom/fathom"
+url: "https://embeddedriskanalytics.com"
+license: MIT
+version: 0.1.0
+date-released: "2026-09-02"
+preferred-citation:
+  type: article
+  title: "Records, Reflexive Modeling, and the Conditions for Stable Physical Histories: A Feasibility Inequality and Three Minimal Models"
+  authors:
+    - family-names: Galligan
+      given-names: Peter
+  year: 2026
+  doi: "10.2139/ssrn.6683578"
+  url: "https://ssrn.com/abstract=6683578"
