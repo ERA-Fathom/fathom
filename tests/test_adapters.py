@@ -51,3 +51,18 @@ def test_cli_ops_only_sends_nothing(capsys):
     assert main(["read", os.path.join(EXAMPLES, "knowledge_update.json"), "--ops"]) == 0
     out = json.loads(capsys.readouterr().out)
     assert len(out) == 4 and out[-1]["op"] == "answer"
+
+
+def test_openinference_span_status_and_plain_text_errors():
+    from fathom_read.adapters import openinference
+    def span(name, params, out, status=None):
+        s = {"attributes": {"openinference.span.kind": "TOOL", "tool.name": name,
+                            "tool.parameters": json.dumps(params), "output.value": out}}
+        if status:
+            s["status_code"] = status
+        return s
+    spans = [span("write_file", {"path": "a.py", "content": "x"}, "ok"),
+             span("write_file", {"path": "b.py", "content": "y"}, "error: disk quota exceeded"),
+             span("write_file", {"path": "c.py", "content": "z"}, "written", status="ERROR")]
+    ops = openinference.load({"spans": spans})
+    assert [o.ok for o in ops] == [True, False, False]
