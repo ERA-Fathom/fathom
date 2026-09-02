@@ -39,6 +39,13 @@ def load(doc: Any, mapping_path: str = None, **_) -> List[Op]:
     for sp in spans:
         a = sp.get("attributes", sp)
         if str(a.get(KIND, "")).upper() == "TOOL":
+            status = sp.get("status_code")
+            if status is None:
+                status = sp.get("status")
+                if isinstance(status, dict):
+                    status = status.get("code", status.get("status_code"))
+            a = dict(a)
+            a["_span_error"] = str(status or "").upper() in ("ERROR", "STATUS_CODE_ERROR", "2")
             tool_spans.append(a)
     tool_spans.sort(key=lambda a: a.get("start_time", a.get("start", 0)) or 0)
 
@@ -47,9 +54,12 @@ def load(doc: Any, mapping_path: str = None, **_) -> List[Op]:
     for i, a in enumerate(tool_spans):
         name = a.get(TOOL_NAME, "")
         params = _parse(a.get(TOOL_PARAMS), {}) or {}
-        ret = _parse(a.get(OUTPUT), {})
-        ok = True
-        if isinstance(ret, dict) and "success" in ret:
+        raw_out = a.get(OUTPUT)
+        ret = _parse(raw_out, raw_out)
+        ok = not a.get("_span_error", False)
+        if not ok:
+            pass  # the span itself reports failure
+        elif isinstance(ret, dict) and "success" in ret:
             ok = bool(ret["success"])
         elif isinstance(ret, dict) and ret.get("error"):
             ok = False
