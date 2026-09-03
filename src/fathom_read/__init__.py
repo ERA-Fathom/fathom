@@ -2,7 +2,7 @@
 from .ops import Op, Finding, Verdict  # noqa: F401
 from .client import read, ReadError  # noqa: F401
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 __all__ = ["Op", "Finding", "Verdict", "read", "ReadError", "read_file", "load_ops"]
 
 
