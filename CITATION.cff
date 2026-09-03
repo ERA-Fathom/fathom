@@ -7,7 +7,7 @@ authors:
 repository-code: "https://github.com/ERA-Fathom/fathom"
 url: "https://embeddedriskanalytics.com"
 license: MIT
-version: 0.1.1
+version: 0.1.2
 date-released: "2026-09-02"
 preferred-citation:
   type: article
