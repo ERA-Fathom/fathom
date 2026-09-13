@@ -26,6 +26,28 @@ fathom formats                                           # the formats it reads
 
 `fathom read` exits 0 when the committed state is coherent and 2 when it finds a contradiction, so it drops into a test suite or a CI step as it is. Add `--json` for a machine-readable verdict.
 
+## The expiry read
+
+```
+fathom expiry trace.json                                  # functional life remaining, and the alarms
+fathom expiry trace.json --calibration airline_tool_agent # score under a named workload calibration
+fathom expiry trace.json --json                           # the full per-step report
+```
+
+Every agent run spoils eventually. `fathom expiry` reads the same action stream and reports how much functional life the run has left before its committed state contradicts itself, in steps, together with two alarms. The exposure alarm fires while a rejected or corrupted action stands in the record, and the load alarm fires when the weight of what the agent has committed carries the risk on its own. Both move when the agent acts and stay flat while it only looks. A wall clock enters nowhere, because in our measurements the step count alone carries no information about when a run spoils once what stands in the record is accounted for.
+
+The read scores under a calibration fitted on a population of runs of a workload. The service lists the calibrations on offer, and with none named the read scores under a pooled default and labels the result a shape rather than a number. A calibration for your own workload comes from a batch of your traces, which is the readout we already offer. `fathom expiry` exits 0 when no alarm fired and 3 when one did.
+
+```
+trace.json
+  calibration airline_tool_agent (number), 15 steps read, 1 contradiction(s)
+  functional life remaining at step 14: about 1 step(s), median
+  with the standing rejected action cleared: about 3 step(s)
+  exposure alarm: first fired at step 6
+  load alarm: none
+  first contradiction landed at step 14
+```
+
 The package ships with a demo key that is rate-limited per day. For your own key, which lifts the limit and keeps your traces on a private tier, write to [contact@embeddedriskanalytics.com](mailto:contact@embeddedriskanalytics.com?subject=fathom-read%20key) and set `FATHOM_API_KEY`. `--ops` shows exactly what would be sent: the ops the adapter produced, and nothing else.
 
 ## What it reads
@@ -79,11 +101,15 @@ verdict = read(ops)          # uses FATHOM_API_KEY, or the demo key
 for f in verdict.findings:
     print(f.kind, f.step, f.detail)
 # superseded_value 2 step 2 answers 'Denver' for fact 'user.city', a value the agent replaced with 'Austin' at step 1.
+
+from fathom_read import expiry
+report = expiry(ops, calibration="airline_tool_agent")
+print(report["expiry"]["remaining"]["median_steps"], report["expiry"]["alarm"]["exposure_first_step"])
 ```
 
 ## What it does not do
 
-It does not run your agent, call a model, or need one. It does not say why the agent contradicted itself or which repair would fix it; that is the [design-partner engagement](https://embeddedriskanalytics.com/contact.html). It reads agents whose committed state lives in tool calls, checkpoints, memory writes, or edits; an agent that keeps state only in free-text logs is out of scope.
+It does not run your agent, call a model, or need one. It does not say why the agent contradicted itself or which repair would fix it; that is the [design-partner engagement](https://embeddedriskanalytics.com/contact.html). The expiry read predicts contradiction of committed state, and on the workloads we have measured a contradiction ends a task's chance of passing, but the read says nothing about task reward directly, and a life estimate for a single run carries a wide interval, which is why the alarms are the part to wire in. It reads agents whose committed state lives in tool calls, checkpoints, memory writes, or edits; an agent that keeps state only in free-text logs is out of scope.
 
 ## Research
 
