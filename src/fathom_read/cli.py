@@ -7,7 +7,7 @@ import sys
 from typing import List, Optional, Tuple
 
 from . import adapters
-from .client import DEMO_KEY, ReadError, read
+from .client import DEMO_KEY, ReadError, expiry, read
 from .ops import Op, Verdict
 
 EXAMPLES = os.path.join(os.path.dirname(__file__), "examples")
@@ -72,6 +72,40 @@ def cmd_read(args) -> int:
     return 0 if v.coherent else 2
 
 
+def render_expiry(rep: dict, title: str) -> str:
+    ex = rep["expiry"]; rd = rep["read"]; al = ex["alarm"]; rem = ex.get("remaining") or {}
+    lines = [title, f"  calibration {ex['calibration']} ({ex['kind']}), {len(ex['steps'])} steps read, {len(rd['findings'])} contradiction(s)"]
+    if rem:
+        life = rem.get("median_steps")
+        lines.append(f"  functional life remaining at step {rem['at_step']}: " + ("under one step" if life == 0 else f"about {life} step(s), median" if life is not None else "unbounded under this calibration"))
+        if rem.get("median_steps_if_exposure_cleared") is not None and rem.get("median_steps_if_exposure_cleared") != life:
+            lines.append(f"  with the standing rejected action cleared: about {rem['median_steps_if_exposure_cleared']} step(s)")
+    e_step, l_step = al.get("exposure_first_step"), al.get("load_first_step")
+    lines.append("  exposure alarm: " + ("none" if e_step is None else f"first fired at step {e_step}"))
+    lines.append("  load alarm: " + ("none" if l_step is None else f"first fired at step {l_step}"))
+    if ex.get("first_event_step") is not None: lines.append(f"  first contradiction landed at step {ex['first_event_step']}")
+    if ex.get("caveat"): lines.append("  note: " + ex["caveat"])
+    return "\n".join(lines)
+
+
+def cmd_expiry(args) -> int:
+    ops = load_ops(args.path, args.format, args.map)
+    if args.ops:
+        print(json.dumps([o.as_dict() for o in ops], indent=2))
+        return 0
+    try:
+        rep = expiry(ops, supersede=parse_supersede(args.supersede), calibration=args.calibration, horizon=args.horizon,
+                     alarm_multiple=args.alarm_multiple, key=args.key, endpoint=args.endpoint)
+    except ReadError as e:
+        raise SystemExit(f"fathom: {e}")
+    if args.json:
+        print(json.dumps(rep, indent=2))
+    else:
+        print(render_expiry(rep, os.path.basename(args.path)))
+    al = rep["expiry"]["alarm"]
+    return 3 if (al.get("exposure_first_step") is not None or al.get("load_first_step") is not None) else 0
+
+
 def cmd_demo(args) -> int:
     print("fathom demo: a coding agent renames guest_id to customer_id across five files, then runs the tests.\n")
     for name in ("rename_coherent.json", "rename_starved.json"):
@@ -109,6 +143,19 @@ def main(argv: Optional[List[str]] = None) -> int:
     r.add_argument("--ops", action="store_true", help="print the op stream the adapter produced and stop (nothing is sent)")
     _common(r)
     r.set_defaults(fn=cmd_read)
+
+    x = sub.add_parser("expiry", help="read a trace and report the agent's functional life remaining and its alarms")
+    x.add_argument("path", help="trace file (.json or .jsonl)")
+    x.add_argument("--format", default="auto", help="events | edits | openinference | langgraph | crewai | letta | dbos (default: auto)")
+    x.add_argument("--supersede", action="append", metavar="OLD=NEW", help="a token the run should have replaced (repeatable)")
+    x.add_argument("--map", help="JSON file mapping your tool or step names to ops")
+    x.add_argument("--calibration", help="the workload calibration to score under (default: the pooled shape)")
+    x.add_argument("--horizon", type=int, help="steps ahead the alarms look (default from the calibration)")
+    x.add_argument("--alarm-multiple", type=float, help="alarm level as a multiple of the calibration's baseline risk (default from the calibration)")
+    x.add_argument("--json", action="store_true", help="print the full report as JSON")
+    x.add_argument("--ops", action="store_true", help="print the op stream the adapter produced and stop (nothing is sent)")
+    _common(x)
+    x.set_defaults(fn=cmd_expiry)
 
     d = sub.add_parser("demo", help="run the bundled rename example, coherent and not")
     _common(d)
