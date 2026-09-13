@@ -1,9 +1,9 @@
 """fathom-read: catch the step where an AI agent contradicts a decision it already made."""
 from .ops import Op, Finding, Verdict  # noqa: F401
-from .client import read, ReadError  # noqa: F401
+from .client import read, expiry, ReadError  # noqa: F401
 
-__version__ = "0.1.2"
-__all__ = ["Op", "Finding", "Verdict", "read", "ReadError", "read_file", "load_ops"]
+__version__ = "0.2.0"
+__all__ = ["Op", "Finding", "Verdict", "read", "expiry", "ReadError", "read_file", "expiry_file", "load_ops"]
 
 
 def load_ops(path: str, fmt: str = "auto", mapping_path: str = None):
@@ -15,3 +15,8 @@ def load_ops(path: str, fmt: str = "auto", mapping_path: str = None):
 def read_file(path: str, fmt: str = "auto", supersede=None, mapping_path: str = None, **kw) -> Verdict:
     """Read a trace file and return the hosted read's verdict."""
     return read(load_ops(path, fmt, mapping_path), supersede=supersede, **kw)
+
+
+def expiry_file(path: str, fmt: str = "auto", supersede=None, mapping_path: str = None, **kw) -> dict:
+    """Read a trace file and return the hosted expiry read's report."""
+    return expiry(load_ops(path, fmt, mapping_path), supersede=supersede, **kw)
