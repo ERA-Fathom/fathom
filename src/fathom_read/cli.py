@@ -73,18 +73,42 @@ def cmd_read(args) -> int:
 
 
 def render_expiry(rep: dict, title: str) -> str:
+    """Render the expiry read, including the two cases where the read withholds its own numbers.
+
+    A run whose covariates leave the region the calibration was fitted on gets the out-of-range condition in place of a
+    life estimate and its alarm, since a hazard extrapolated well past the fit is not a measurement. A run whose
+    reported life is shorter than the stretch it has already survived without a contradiction keeps its alarm and loses
+    the life estimate, since the run itself refutes that number.
+    """
     ex = rep["expiry"]; rd = rep["read"]; al = ex["alarm"]; rem = ex.get("remaining") or {}
+    withheld = ex.get("withheld") or {}
+    oor = ex.get("out_of_range") or {}
     lines = [title, f"  calibration {ex['calibration']} ({ex['kind']}), {len(ex['steps'])} steps read, {len(rd['findings'])} contradiction(s)"]
-    if rem:
+    if withheld.get("alarms") == "out_of_range":
+        covs = ", ".join(oor.get("covariates") or []) or "a covariate"
+        lines.append(f"  this read does not apply to this run. {oor.get('steps_out')} of {oor.get('steps_total')} steps"
+                     f" run outside the region this calibration was fitted on, from step {oor.get('first_step')} onward ({covs}).")
+        lines.append(f"  the calibration carries the first {oor.get('in_range_span')} steps of this run, and no life"
+                     " estimate and no alarm are reported past that point.")
+        if ex.get("first_event_step") is not None:
+            lines.append(f"  the contradiction read is unaffected, and the first contradiction landed at step {ex['first_event_step']}")
+        return "\n".join(lines)
+    if withheld.get("life") == "survived_span":
+        lines.append(f"  no functional life remaining is reported. This run has already taken {ex.get('survived_span')}"
+                     " step(s) without a contradiction, which is longer than the life the calibration puts on it, so the"
+                     " run itself refutes the estimate.")
+    elif rem:
         life = rem.get("median_steps")
         lines.append(f"  functional life remaining at step {rem['at_step']}: " + ("under one step" if life == 0 else f"about {life} step(s), median" if life is not None else "unbounded under this calibration"))
         if rem.get("median_steps_if_exposure_cleared") is not None and rem.get("median_steps_if_exposure_cleared") != life:
             lines.append(f"  with the standing rejected action cleared: about {rem['median_steps_if_exposure_cleared']} step(s)")
-    e_step, l_step = al.get("exposure_first_step"), al.get("load_first_step")
+    e_step = al.get("exposure_first_step")
     lines.append("  exposure alarm: " + ("none" if e_step is None else f"first fired at step {e_step}"))
-    lines.append("  load alarm: " + ("none" if l_step is None else f"first fired at step {l_step}"))
     if ex.get("first_event_step") is not None: lines.append(f"  first contradiction landed at step {ex['first_event_step']}")
-    if ex.get("caveat"): lines.append("  note: " + ex["caveat"])
+    # The caveat restates the withholding reason the lines above already carry, so it is printed only when it says
+    # something new, which is the in-range case where some steps still sit outside the fit.
+    if ex.get("caveat") and not withheld.get("life") and not withheld.get("alarms"):
+        lines.append("  note: " + ex["caveat"])
     return "\n".join(lines)
 
 
@@ -102,8 +126,12 @@ def cmd_expiry(args) -> int:
         print(json.dumps(rep, indent=2))
     else:
         print(render_expiry(rep, os.path.basename(args.path)))
-    al = rep["expiry"]["alarm"]
-    return 3 if (al.get("exposure_first_step") is not None or al.get("load_first_step") is not None) else 0
+    ex = rep["expiry"]
+    # A run the calibration does not cover exits 0. It is not a clean bill of health and it is not an alarm either, and
+    # exiting 3 on every long-running agent would teach a pipeline to ignore the code.
+    if (ex.get("withheld") or {}).get("alarms"):
+        return 0
+    return 3 if ex["alarm"].get("exposure_first_step") is not None else 0
 
 
 def cmd_demo(args) -> int:
@@ -144,13 +172,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     _common(r)
     r.set_defaults(fn=cmd_read)
 
-    x = sub.add_parser("expiry", help="read a trace and report the agent's functional life remaining and its alarms")
+    x = sub.add_parser("expiry", help="read a trace and report the agent's functional life remaining and its alarm")
     x.add_argument("path", help="trace file (.json or .jsonl)")
     x.add_argument("--format", default="auto", help="events | edits | openinference | langgraph | crewai | letta | dbos (default: auto)")
     x.add_argument("--supersede", action="append", metavar="OLD=NEW", help="a token the run should have replaced (repeatable)")
     x.add_argument("--map", help="JSON file mapping your tool or step names to ops")
     x.add_argument("--calibration", help="the workload calibration to score under (default: the pooled shape)")
-    x.add_argument("--horizon", type=int, help="steps ahead the alarms look (default from the calibration)")
+    x.add_argument("--horizon", type=int, help="steps ahead the alarm looks (default from the calibration)")
     x.add_argument("--alarm-multiple", type=float, help="alarm level as a multiple of the calibration's baseline risk (default from the calibration)")
     x.add_argument("--json", action="store_true", help="print the full report as JSON")
     x.add_argument("--ops", action="store_true", help="print the op stream the adapter produced and stop (nothing is sent)")
