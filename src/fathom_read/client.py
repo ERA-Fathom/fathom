@@ -26,7 +26,7 @@ def read(ops: Iterable[Op], supersede: Optional[List[Tuple[str, str]]] = None,
     body = json.dumps({"ops": [o.as_dict() for o in ops], "supersede": [list(p) for p in (supersede or [])]}).encode()
     req = urllib.request.Request(endpoint, data=body, method="POST", headers={
         "Content-Type": "application/json", "Authorization": f"Bearer {key}",
-        "User-Agent": "fathom-read/0.2.0"})
+        "User-Agent": "fathom-read/" + __import__("fathom_read").__version__})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return Verdict.from_dict(json.loads(r.read().decode()))
@@ -57,7 +57,7 @@ def expiry(ops: Iterable[Op], supersede: Optional[List[Tuple[str, str]]] = None,
     if horizon: payload["horizon_k"] = int(horizon)
     if alarm_multiple: payload["alarm_mult"] = float(alarm_multiple)
     req = urllib.request.Request(endpoint, data=json.dumps(payload).encode(), method="POST", headers={
-        "Content-Type": "application/json", "Authorization": f"Bearer {key}", "User-Agent": "fathom-read/0.2.0"})
+        "Content-Type": "application/json", "Authorization": f"Bearer {key}", "User-Agent": "fathom-read/" + __import__("fathom_read").__version__})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read().decode())

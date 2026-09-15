@@ -1,5 +1,6 @@
 """Adapters turn what a framework already records into the op stream the read consumes."""
 from . import events, edits, openinference, langgraph, crewai, letta, dbos  # noqa: F401
+from . import openmanus, chatdev, metagpt, magentic, hyperagent, appworld, ag2  # noqa: F401
 
 FORMATS = {
     "events": events,
@@ -9,12 +10,36 @@ FORMATS = {
     "crewai": crewai,
     "letta": letta,
     "dbos": dbos,
+    "openmanus": openmanus,
+    "chatdev": chatdev,
+    "metagpt": metagpt,
+    "magentic": magentic,
+    "hyperagent": hyperagent,
+    "appworld": appworld,
+    "ag2": ag2,
 }
+
+# Formats whose native record is a text log rather than a JSON document, tried in this order on text input.
+TEXT_FORMATS = ("chatdev", "metagpt", "openmanus", "magentic", "appworld", "hyperagent", "ag2")
 
 
 def detect(doc) -> str:
-    """Guess the format of a loaded JSON document."""
+    """Guess the format of a loaded document, a parsed JSON value or the text of a log."""
+    if isinstance(doc, str):
+        for name in TEXT_FORMATS:
+            mod = FORMATS[name]
+            if mod.looks_like(doc):
+                return name
+        raise ValueError("could not detect the log format; pass --format")
     if isinstance(doc, dict):
+        if "trajectory" in doc and "instance_id" in doc:
+            if ag2.looks_like(doc):
+                return "ag2"
+            tr = doc.get("trajectory")
+            if isinstance(tr, list) and tr and isinstance(tr[0], str) and tr[0].startswith("HyperAgent_"):
+                return "hyperagent"
+        if "log" in doc and isinstance(doc["log"], str):
+            return detect(doc["log"])
         if "ops" in doc:
             return "events"
         if "spans" in doc or "resourceSpans" in doc:

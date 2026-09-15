@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.4.0 (2026-09-15)
+
+Seven adapters for frameworks that write their own log files, and one more thing the read reports.
+
+Adapters. `chatdev`, `metagpt`, `openmanus`, `magentic`, `hyperagent`, `appworld` and `ag2` read the log a framework
+already writes, with no export step, and `fathom read` recognises each from the log's own markers, so a `.log`, a
+`.txt` or a trajectory `.json` can be passed as it is. The package now reads fourteen formats. The seven were built on
+the MAST corpus (Cemri et al., 2025) and run over its 9,320 traces, and each adapter's docstring says what it treats
+as a write and what it treats as a read. Two of them cover shapes the earlier adapters did not, a code workspace revised
+across phases (ChatDev, MetaGPT, HyperAgent, and OpenManus's editor), where each file's symbols and imports are part of
+the committed record, and an orchestrator's fact sheet rewritten every round (Magentic-One).
+
+The read. A write of the value a fact already holds now reports as a `duplicate_commit`, beside the add of a member a
+collection already holds. On the MAST corpus this is what a tester republishing an identical test file after a review
+comment looks like, and an editor re-applying an identical patch, and until now the read treated both as no-ops. A
+trace that re-sets an unchanged value read as coherent before this release and reports one duplicate commit after it.
+Adapters whose records re-assert state by design (a fact sheet carried forward, an answer restated in a summary, a
+code block re-run) write nothing for the re-assertion, so the report names actions taken twice.
+
+The CLI. `fathom read` and `fathom expiry` accept a framework's log file where before they accepted JSON only, and
+`fathom formats` lists all fourteen.
+
 ## 0.3.0 (2026-09-14)
 
 The expiry read now carries covariates that cannot run off the end of their own calibration, and it refuses rather than

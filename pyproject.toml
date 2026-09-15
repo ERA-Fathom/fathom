@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fathom-read"
-version = "0.3.0"
-description = "Catch the step where an AI agent contradicts a decision it already made, and read how much functional life a run has left. Adapters and a CLI for the Fathom committed-state and expiry reads over LangGraph, CrewAI, Letta, OpenInference, DBOS, and coding-agent traces."
+version = "0.4.0"
+description = "Catch the step where an AI agent contradicts a decision it already made, and read how much functional life a run has left. Adapters and a CLI for the Fathom committed-state and expiry reads over LangGraph, CrewAI, Letta, OpenInference, DBOS, coding-agent traces, and the log files of ChatDev, MetaGPT, OpenManus, Magentic-One, HyperAgent, AppWorld and AG2."
 readme = "README.md"
 requires-python = ">=3.9"
 license = {file = "LICENSE"}
 authors = [{name = "Embedded Risk Analytics", email = "contact@embeddedriskanalytics.com"}]
-keywords = ["ai-agents", "llm", "langgraph", "crewai", "letta", "openinference", "agent-memory", "context-engineering", "agent-evaluation", "coherence"]
+keywords = ["ai-agents", "llm", "langgraph", "crewai", "letta", "openinference", "agent-memory", "context-engineering", "agent-evaluation", "coherence", "multi-agent", "chatdev", "metagpt", "autogen", "magentic-one"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",

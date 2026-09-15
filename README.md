@@ -76,6 +76,20 @@ The package ships with a demo key that is rate-limited per day. For your own key
 | `edits` | A coding agent's edit log | `{"initial_files": {...}, "edits": [{"tool": "str_replace_editor", "args": {...}, "ok": true}]}` |
 | `events` | The native op stream | One op per line: `{"op": "set", "kind": "file", "key": "a.py", "value": "...", "ok": true}` |
 
+Seven frameworks are read from the log files they already write, with no export step. Point `fathom read` at the file and the format is recognised from the log's own markers.
+
+| Format | The file it reads | What counts as committed state |
+|---|---|---|
+| `chatdev` | The chat-chain `.log` in a WareHouse project folder | Every code update, folded onto the running copy of each file, with the symbols each file defines and the sibling symbols it imports |
+| `metagpt` | The agent communication log | The code each role publishes, with its symbols and imports |
+| `openmanus` | The `run_flow` log | The plan's steps, the files the editor creates and edits, and the terminate call |
+| `magentic` | A Magentic-One `console_log.txt` | The orchestrator's fact sheet, one fact per line with the standing it was given, and the final answer |
+| `hyperagent` | A HyperAgent trajectory (`.json` or the release's text dump) | The regions and symbols the Editor intern wrote |
+| `appworld` | A task's agent log | Mutations through the app APIs, and the task's completion |
+| `ag2` | An AG2 math dialogue (`.json`, or the release's text forms) | Numeric quantities stated in code and the boxed answer |
+
+These seven were built on the MAST corpus ([Cemri et al., 2025](https://arxiv.org/abs/2503.13657)) and run over its 9,320 traces. Each adapter's docstring states what it treats as a write and what it treats as a read.
+
 Your tools have their own names. Map them once with `--map tools.json`:
 
 ```json
@@ -92,7 +106,7 @@ Your tools have their own names. Map them once with `--map tools.json`:
 | `superseded_value` | writes or answers with a value it already replaced |
 | `authored_contradiction` | reintroduces a token into a record it had already migrated |
 | `residual` | ends the run with a record still carrying a value it replaced elsewhere |
-| `duplicate_commit` | adds an entity a collection already holds |
+| `duplicate_commit` | adds an entity a collection already holds, or writes a fact with the value it already holds |
 | `post_commit_mutation` | changes a thing after committing it |
 
 Every finding cites the earlier step it contradicts, so the readout is a diff between what the agent decided and what it did.

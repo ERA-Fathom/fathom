@@ -18,7 +18,10 @@ def load_ops(path: str, fmt: str = "auto", mapping_path: Optional[str] = None) -
         text = f.read()
     if path.endswith(".jsonl"):
         return adapters.events.load_jsonl(text)
-    doc = json.loads(text)
+    try:
+        doc = json.loads(text)
+    except ValueError:
+        doc = text   # a framework's own log file; the text adapters take it as it is
     if fmt == "auto":
         fmt = adapters.detect(doc)
     if fmt not in adapters.FORMATS:
@@ -163,8 +166,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     sub = p.add_subparsers(dest="cmd")
 
     r = sub.add_parser("read", help="read a trace and report contradictions of committed state")
-    r.add_argument("path", help="trace file (.json or .jsonl)")
-    r.add_argument("--format", default="auto", help="events | edits | openinference | langgraph | crewai | letta | dbos (default: auto)")
+    r.add_argument("path", help="trace file (.json, .jsonl, or a framework's own log file)")
+    r.add_argument("--format", default="auto", help="one of the names `fathom formats` lists (default: auto)")
     r.add_argument("--supersede", action="append", metavar="OLD=NEW", help="a token the run should have replaced, e.g. guest_id=customer_id (repeatable)")
     r.add_argument("--map", help="JSON file mapping your tool or step names to ops")
     r.add_argument("--json", action="store_true", help="print the verdict as JSON")
@@ -174,7 +177,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     x = sub.add_parser("expiry", help="read a trace and report the agent's functional life remaining and its alarm")
     x.add_argument("path", help="trace file (.json or .jsonl)")
-    x.add_argument("--format", default="auto", help="events | edits | openinference | langgraph | crewai | letta | dbos (default: auto)")
+    x.add_argument("--format", default="auto", help="one of the names `fathom formats` lists (default: auto)")
     x.add_argument("--supersede", action="append", metavar="OLD=NEW", help="a token the run should have replaced (repeatable)")
     x.add_argument("--map", help="JSON file mapping your tool or step names to ops")
     x.add_argument("--calibration", help="the workload calibration to score under (default: the pooled shape)")

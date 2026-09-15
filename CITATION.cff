@@ -7,8 +7,8 @@ authors:
 repository-code: "https://github.com/ERA-Fathom/fathom"
 url: "https://embeddedriskanalytics.com"
 license: MIT
-version: 0.1.2
-date-released: "2026-09-02"
+version: 0.4.0
+date-released: "2026-09-15"
 preferred-citation:
   type: article
   title: "Records, Reflexive Modeling, and the Conditions for Stable Physical Histories: A Feasibility Inequality and Three Minimal Models"
